@@ -1,0 +1,1516 @@
+Scalable Grid Service Discovery Based on UDDI*
+*
+Authors are listed in alphabetical order.
+Sujata Banerjee$
+, Sujoy Basu$
+, Shishir Garg , Sukesh Garg , Sung-Ju Lee$
+, Pramila Mullan , Puneet Sharma$
+$
+HP Labs
+1501 Page Mill Road
+Palo Alto, CA, 94304 USA
++1-650-857-2137
+{sujata.banerjee,sujoy.basu,sungju.lee,puneet.sharma}@hp.com
+France Telecom R&D Division
+801 Gateway Blvd, # 500
+South San Francisco, CA, 94080 USA
++1 650 -875-1500
+{shishir.garg,sukesh.garg,pramila.mullan}@francetelecom.com
+ABSTRACT
+Efficient discovery of grid services is essential for the success of
+grid computing. The standardization of grids based on web
+services has resulted in the need for scalable web service
+discovery mechanisms to be deployed in grids Even though UDDI
+has been the de facto industry standard for web-services
+discovery, imposed requirements of tight-replication among
+registries and lack of autonomous control has severely hindered
+its widespread deployment and usage. With the advent of grid
+computing the scalability issue of UDDI will become a roadblock
+that will prevent its deployment in grids. In this paper we present
+our distributed web-service discovery architecture, called DUDE
+(Distributed UDDI Deployment Engine). DUDE leverages DHT
+(Distributed Hash Tables) as a rendezvous mechanism between
+multiple UDDI registries. DUDE enables consumers to query
+multiple registries, still at the same time allowing organizations to
+have autonomous control over their registries.. Based on
+preliminary prototype on PlanetLab, we believe that DUDE
+architecture can support effective distribution of UDDI registries
+thereby making UDDI more robust and also addressing its scaling
+issues. Furthermore, The DUDE architecture for scalable
+distribution can be applied beyond UDDI to any Grid Service
+Discovery mechanism.
+Categories and Subject Descriptors
+C2.4 [Distributed Systems]
+General Terms
+Design, Experimentation, Standardization.
+1. INTRODUCTION
+Efficient discovery of grid services is essential for the success of
+grid computing. The standardization of grids based on web
+services has resulted in the need for scalable web service
+Permission to make digital or hard copies of all or part of this
+work for personal or classroom use is granted without fee
+provided that copies are not made or distributed for profit or
+commercial advantage and that copies bear this notice and the
+full citation on the first page. To copy otherwise,to republish,
+to post on servers or to redistribute to lists, requires prior
+specific permission and/or a fee.
+MGC '05, November 28- December 2, 2005 Grenoble , France
+discovery mechanisms to be deployed in grids. Grid discovery
+services provide the ability to monitor and discover resources and
+services on grids. They provide the ability to query and subscribe
+to resource/service information. In addition, threshold traps might
+be required to indicate specific change in existing conditions. The
+state of the data needs to be maintained in a soft state so that the
+most recent information is always available. The information
+gathered needs to be provided to variety of systems for the
+purpose of either utilizing the grid or proving summary
+information. However, the fundamental problem is the need to be
+scalable to handle huge amounts of data from multiple sources.
+The web services community has addressed the need for service
+discovery, before grids were anticipated, via an industry standard
+called UDDI. However, even though UDDI has been the de facto
+industry standard for web-services discovery, imposed
+requirements of tight-replication among registries and lack of
+autonomous control, among other things has severely hindered its
+widespread deployment and usage [7]. With the advent of grid
+computing the scalability issue with UDDI will become a
+roadblock that will prevent its deployment in grids.
+This paper tackles the scalability issue and a way to find services
+across multiple registries in UDDI by developing a distributed
+web services discovery architecture. Distributing UDDI
+functionality can be achieved in multiple ways and perhaps using
+different distributed computing infrastructure/platforms (e.g.,
+CORBA, DCE, etc.). In this paper we explore how Distributed
+Hash Table (DHT) technology can be leveraged to develop a
+scalable distributed web services discovery architecture. A DHT is
+a peer-to-peer (P2P) distributed system that forms a structured
+overlay allowing more efficient routing than the underlying
+network. This crucial design choice is motivated by two factors.
+The first motivating factor is the inherent simplicity of the put/get
+abstraction that DHTs provide, which makes it easy to rapidly
+build applications on top of DHTs. We recognize that having just
+this abstraction may not suffice for all distributed applications, but
+for the objective at hand, works very well as will become clear
+later. Other distributed computing platforms/middleware while
+providing more functionality have much higher overhead and
+complexity. The second motivating factor stems from the fact that
+DHTs are relatively new tool for building distributed applications
+and we would like to test its potential by applying it to the
+problem of distributing UDDI.
+In the next section, we provide a brief overview of grid
+information services, UDDI and its limitations, which is followed
+by an overview of DHTs in Section 3. Section 4 describes our
+proposed architecture with details on use cases. In Section 5, we
+Article 2
+describe our current implementation, followed by our findings in
+Section 6. Section 7 discusses the related work in this area and
+Section 8 contains our concluding remarks.
+2. BACKGROUND
+2.1 Grid Service Discovery
+Grid computing is based on standards which use web services
+technology. In the architecture presented in [6], the service
+discovery function is assigned to a specialized Grid service called
+Registry. The implementation of the web service version of the
+Monitoring and Discovery Service (WS MDS), also known as the
+MDS4 component of the Globus Toolkit version 4 (GT4),
+includes such a registry in the form of the Index service Resource
+and service properties are collected and indexed by this service.
+Its basic function makes it similar to UDDI registry. To attain
+scalability, Index services from different Globus containers can
+register with each other in a hierarchical fashion to aggregate data.
+This approach for attaining scalability works best in hierarchical
+Virtual Organizations (VO), and expanding a search to find
+sufficient number of matches involves traversing the hierarchy.
+Specifically, this approach is not a good match for systems that try
+to exploit the convergence of grid and peer-to-peer computing [5].
+2.2 UDDI
+Beyond grid computing, the problem of service discovery needs to
+be addressed more generally in the web services community.
+Again, scalability is a major concern since millions of buyers
+looking for specific services need to find all the potential sellers
+of the service who can meet their needs. Although there are
+different ways of doing this, the web services standards
+committees address this requirement through a specification
+called UDDI (Universal Description, Discovery, and Integration).
+A UDDI registry enables a business to enter three types of
+information in a UDDI registry - white pages, yellow pages and
+green pages. UDDI"s intent is to function as a registry for services
+just as the yellow pages is a registry for businesses. Just like in
+Yellow pages, companies register themselves and their services
+under different categories. In UDDI, White Pages are a listing of
+the business entities. Green pages represent the technical
+information that is necessary to invoke a given service. Thus, by
+browsing a UDDI registry, a developer should be able to locate a
+service and a company and find out how to invoke the service.
+When UDDI was initially offered, it provided a lot of potential.
+However, today we find that UDDI has not been widely deployed
+in the Internet. In fact, the only known uses of UDDI are what are
+known as private UDDI registries within an enterprise"s
+boundaries. The readers can refer to [7] for a recent article that
+discusses the shortcomings of UDDI and the properties of an ideal
+service registry. Improvement of the UDDI standard is continuing
+in full force and UDDI version 3 (V3) was recently approved as
+an OASIS Standard. However, UDDI today has issues that have
+not been addressed, such as scalability and autonomy of
+individual registries.
+UDDI V3 provides larger support for multi-registry environments
+based on portability of keys By allowing keys to be re-registered
+in multiple registries, the ability to link registries in various
+topologies is effectively enabled. However, no normative
+description of these topologies is provided in the UDDI
+specification at this point. The improvements within UDDI V3
+that allow support for multi-registry environments are significant
+and open the possibility for additional research around how 
+multiregistry environments may be deployed. A recommended
+deployment scenario proposed by the UDDI V3.0.2 Specification
+is to use the UDDI Business Registries as root registries, and it is
+possible to enable this using our solution.
+2.3 Distributed Hash Tables
+A Distributed Hash Table (DHT) is a peer-to-peer (P2P)
+distributed system that forms a structured overlay allowing more
+efficient routing than the underlying network. It maintains a
+collection of key-value pairs on the nodes participating in this
+graph structure. For our deployment, a key is the hash of a
+keyword from a service name or description. There will be
+multiple values for this key, one for each service containing the
+keyword. Just like any other hash table data structure, it provides
+a simple interface consisting of put() and get() operations. This
+has to be done with robustness because of the transient nature of
+nodes in P2P systems. The value stored in the DHT can be any
+object or a copy or reference to it. The DHT keys are obtained
+from a large identifier space. A hash function, such as MD5 or
+SHA-1, is applied to an object name to obtain its DHT key. Nodes
+in a DHT are also mapped into the same identifier space by
+applying the hash function to their identifier, such as IP address
+and port number, or public key. The identifier space is assigned
+to the nodes in a distributed and deterministic fashion, so that
+routing and lookup can be performed efficiently. The nodes of a
+DHT maintain links to some of the other nodes in the DHT. The
+pattern of these links is known as the DHT"s geometry. For
+example, in the Bamboo DHT [11], and in the Pastry DHT [8] on
+which Bamboo is based, nodes maintain links to neighboring
+nodes and to other distant nodes found in a routing table. The
+routing table entry at row i and column j, denoted Ri[j], is another
+node whose identifier matches its own in first i digits, and whose
+(i + 1)st digit is j. The routing table allows efficient overlay
+routing. Bamboo, like all DHTs, specifies algorithms to be
+followed when a node joins the overlay network, or when a node
+fails or leaves the network The geometry must be maintained even
+when this rate is high. To attain consistent routing or lookup, a
+DHT key must be routed to the node with the numerically closest
+identifier. For details of how the routing tables are constructed
+and maintained, the reader is referred to [8, 11].
+3. PROPOSED ARCHITECTURE OF DHT
+BASED UDDI REGISTRY HIERARCHIES
+As mentioned earlier, we propose to build a distributed UDDI
+system on top of a DHT infrastructure. This choice is primarily
+motivated by the simplicity of the put/get abstraction that DHTs
+provide, which is powerful enough for the task at hand, especially
+since we plan to validate our approach with an implementation
+running on PlanetLab [9]. A secondary motivation is to
+understand deployment issues with DHT based systems. Several
+applications have been built as overlays using DHTs, such as
+distributed file storage, databases, publish-subscribe systems and
+content distribution networks. In our case, we are building a DHT
+based overlay network of UDDI registries, where the DHT acts as
+a rendezvous network that connects multiple registries. In the
+grid computing scenario, an overlay network of multiple UDDI
+registries seems to an interesting alternative to the UDDI public
+Article 2
+registries currently maintained by Microsoft, IBM, SAP and NTT.
+In addition, our aim is to not change any of the UDDI interfaces
+for clients as well as publishers.
+Figure 1 highlights the proposed architecture for the DHT based
+UDDI Registry framework. UDDI nodes are replicated in a UDDI
+registry as per the current UDDI standard. However, each local
+registry has a local proxy registry that mediates between the local
+UDDI registry and the DHT Service. The DHT service is the glue
+that connects the Proxy Registries together and facilitates
+searching across registries.
+Figure 1: DUDE Architecture
+Service information can be dispersed to several UDDI registries to
+promote scalability. The proxy registry publishes, performs
+queries and deletes information from the dispersed UDDI
+registries. However, the scope of the queries is limited to relevant
+registries. The DHT provides information about the relevant
+registries. The core idea in the architecture is to populate DHT
+nodes with the necessary information from the proxies which
+enables easy and ubiquitous searching when queries are made.
+When a new service is added to a registry, all potential search
+terms are hashed by the proxy and used as DHT keys to publish
+the service in the DHT. The value stored for this service uniquely
+identifies the service, and includes the URL of a registry and the
+unique UDDI key of the service in that registry. Similarly when
+queries arrive, they are parsed and a set of search terms are
+identified. These search terms are hashed and the values stored
+with those hash values are retrieved from the DHT. Note that a
+proxy does not need to know all DHT nodes; it needs to know just
+one DHT node (this is done as part of the bootstrapping process)
+and as described in Section 2.3, this DHT node can route the
+query as necessary to the other nodes on the DHT overlay. We
+describe three usage scenarios later that deal with adding a new
+local registry, inserting a new service, and querying for a service.
+Furthermore, the DHT optimizes the UDDI query mechanism.
+This process becomes a lookup using a UDDI unique key rather
+than a query using a set of search parameters. This key and the
+URL of the registry are obtained by searching initially in the
+DHT. The DHT query can return multiple values for matching
+services, and in each of the matching registries, the proxy
+performs lookup operations.
+The service name is used as a hash for inserting the service
+information. The service information contains the query URL and
+unique UDDI key for the registry containing the service. There
+could be multiple registries associated with a given service. The
+service information conforms to the following schema.
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+elementFormDefault="qualified"
+attributeFormDefault="unqualified">
+<xs:element name="registries">
+<xs:annotation>
+<xs:documentation>Service Information</xs:documentation>
+</xs:annotation>
+<xs:complexType>
+<xs:sequence>
+<xs:element name="registry" maxOccurs="unbounded">
+<xs:complexType>
+<xs:sequence>
+<xs:element name="name"/>
+<xs:element name="key" maxOccurs="unbounded"/>
+</xs:sequence>
+…
+</xs:schema>
+There can be multiple proxy UDDI registries in this architecture.
+The advantage of this is to introduce distributed interactions
+between the UDDI clients and registries. Organization can also
+decide what information is available from the local registries by
+implementing policies at the proxy registry.
+3.1 Sequence of Operations
+In this section, we demonstrate what the sequence of operations
+should be for three crucial scenarios - adding a new local registry,
+inserting a new service and querying a service. Other operations
+like deleting a registry, deleting a service, etc. are similar and for
+the sake of brevity are omitted here.
+Figure 2: Sequence Diagram- Add New Local Registry
+Add a New Local UDDI Registry
+Figure 2 contains a sequence diagram illustrating how a new
+UDDI registry is added to the network of UDDI registries. The
+new registry registers itself with its proxy registry. The proxy
+registry in turn queries the new registry for all services that it has
+UDDI Local Registry UDDI Local Registry
+UDDI Local Registry
+Proxy Registry
+DHT Based Distribution
+Proxy Registry
+Proxy Registry
+Article 2
+stored in its databases and in turn registers each of those entries
+with the DHT.
+Figure 3: Sequence Diagram - Add New Service
+Add a New Service
+The use case diagram depicted in Error! Reference source not
+found. highlights how a client publishes a new service to the
+UDDI registry. In order to interact with the registry a client has to
+know how to contact its local proxy registry. It then publishes a
+service with the proxy registry which in turn publishes the service
+with the local UDDI registry and receives the UDDI key of the
+registry entry. Then new key-value pairs are published in the
+DHT, where each key is obtained by hashing a searchable
+keyword of the service and the value consists of the query URL of
+the registry and the UDDI key.
+Figure 4: Sequence Diagram - Query for a Service
+Query a Service
+Figure 4 shows how a client queries the UDDI registry for a
+service. Once again, the client needs to know how to contact its
+local proxy registry and invokes the query service request. The
+proxy registry in turn contacts one of the DHT nodes to determine
+DHT queries using the search terms.
+As explained earlier in the context of Figure 1, multiple values
+might be retrieved from the DHT. Each value includes the query
+URL of a registry, and the unique UDDI key of a matching
+service in that registry. The proxy then contacts the matching
+registries and waits for the response of lookup operations using
+the corresponding UDDI keys. Upon receiving the responses, the
+proxy registry collates all responses and returns the aggregated set
+of services to the client.
+We will now illustrate these operations using an example.
+Consider a client contacting its local proxy to publish a service
+called Computer Accessories. The proxy follows the steps in
+Figure 3 to add the service to UDDI 1 registry, and also publishes
+two entries in the DHT. The keys of these entries are obtained by
+hashing the words computer and accessories respectively.
+Both entries have the same value consisting of the query URL of
+this registry and the unique UDDI key returned by the registry for
+this service. Next we consider another client publishing a service
+called Computer Repair through its proxy to UDDI 2 registry. A
+similar process results in 2 more entries being added to the DHT.
+Recall that our DHT deployment can have multiple entries with
+the same key. If we follow the steps in Figure 4 for a client
+sending a query to its proxy using the word computer, we see
+that the DHT is queried with the hash of the word computer as
+key. This retrieves the query URL and respective UDDI keys of
+both services mentioned before in this example. The proxy can
+then do a simple lookup operation at both UDDI 1 and 2
+registries. It is clear that as the number of UDDI registries and
+clients increases, this process of lookup at only relevant UDDI
+registries is more scalable that doing a full search using the word
+computer at all UDDI registries.
+4. IMPLEMENTATION
+In this section, we describe our implementation which is currently
+deployed on PlanetLab [9]. PlanetLab is an open, globally
+distributed platform for developing, deploying, and accessing
+network services. It currently has 527 machines, hosted by 249
+sites, spanning over 25 countries. PlanetLab machines are hosted
+by research/academic institutions as well as industrial companies.
+France Telecom and HP are two of the major industry supporters
+for PlanetLab. Every PlanetLab host machine is connected to the
+Internet and runs a common software package including a Linux
+based operating system that supports server virtualization. Thus
+the users can develop and experiment with new services under
+real-world conditions. The advantage of using PlanetLab is that
+we can test the DUDE architecture under real-world conditions
+with a large scale geographically dispersed node base.
+Due to the availability of jUDDI, an open source UDDI V2
+registry (http://www.juddi.org) and a lack of existing readily
+available UDDI V3 registry, a decision to use UDDI V2 was
+made. The standardization of UDDI V3 is recent and we intend to
+extend this work to support UDDI V3 and subsequent versions in
+the future. The proxy registry is implemented by modifying the
+jUDDI source to enable publishing, querying and deleting service
+information from a DHT. Furthermore, it also allows querying
+multiple registries and collating the response using UDDI4j [13].
+For the DHT implementation, we use the Bamboo DHT code
+[11]. The Bamboo DHT allows multiple proxy registries to
+publish and delete service information from their respective UDDI
+registries, as well as to query for services from all the registries.
+The proxy uses the service name as input to the DHT"s hash
+Article 2
+function to get the DHT key. The value that is stored in the DHT
+using this key is the URI of the registry along with the UDDI key
+of the service. This ensures that when the proxy registry queries
+for services with a certain name, it gets back the URI and UDDI
+keys for matching entries. Using these returned results, the proxy
+can do fast lookup operations at the respective UDDI registries.
+The UDDI keys make it unnecessary to repeat the search at the
+UDDI registries with the service name.
+We have so far described the process of exact match on service
+name. However there are additional types of search that must be
+supported. Firstly, the search requested could be case-insensitive.
+To support that, the proxy registry has to publish the same service
+once using the name exactly as entered in the UDDI registry, and
+once with the name converted to all lower-case letters. To do a
+case-insensitive search, the proxy registry simply has to convert
+the query string into lower-case letters. Secondly, the user could
+query based on the prefix of a service name. Indeed, this is the
+default behavior of search in UDDI. In other words, a wildcard is
+implicit at the end of the service name being searched. To support
+this efficiently in the DHT, our proxy registries have to take
+prefixes of the service name of varying length and publish the
+URI and UDDI key multiple times, once using each prefix. For
+example, the prefix sizes chosen in one deployment might be 5,
+10, 15 and 20 characters. If a search for the first 12 characters of a
+service name is submitted, the proxy registry will query the DHT
+with the first 10 characters of the search string, and then refine the
+search result to ensure that the match extends to the 12th
+character.
+If the search string has less than 5 characters, and the search is for
+a prefix rather than an exact match, the DHT cannot be of any
+help, unless every service is published in the DHT with prefix of
+length 0. Using this null prefix will send a copy of every
+advertised service to the DHT node to which the hash of the null
+prefix maps. Since this can lead to load-imbalance, a better
+solution might be to use the DHT only to get a list of all UDDI
+registries, and send the search to all of them in the locations to be
+searched. Thirdly, the service name being searched can be a
+regular expression, such as one with embedded wildcard
+characters. For example, a search for Garden%s should match
+both Garden Supplies and Gardening Tools. This will be
+treated similarly to the previous case as the DHT has to be queried
+with the longest available prefix. The results returned have to be
+refined to ensure that the regular expression matches.
+Figure 5 shows the network diagram for our implementation.
+There are two proxy UDDI and juddi registry pairs. Consider a
+client which contacts the UDDI proxy on grouse.hpl.hp.com. The
+proxy does a lookup of the DHT using the query string or a prefix.
+This involves contacting one of the DHT nodes, such as 
+pli1-br3.hpl.hp.com, which serves as the gateway to the DHT for
+grouse.hpl.hp.com, based on the latter"s configuration file. The
+DHT node may then route the query to one of the other DHT
+nodes which is responsible for the DHT key that the query string
+maps to. The results of the DHT lookup return to 
+pli1-br3.hpl.hp.com, which forwards them to grouse.hpl.hp.com. The
+results may include a few services from each of the juddi
+registries. So the proxy registry performs the lookup operations at
+both planetlab1 and planetlab2.rdfrancetelecom.com for their
+respective entries listed in the search results. The responses to
+these lookups are collated by the proxy registry and returned to
+the client.
+Figure 5 Network Diagram
+5. RELATED WORK
+A framework for QoS-based service discovery in grids has been
+proposed in [18]. UDDIe, an extended UDDI registry for
+publishing and discovering services based on QoS parameters, is
+proposed in [19]. Our work is complementary since we focus on
+how to federate the UDDI registries and address the scalability
+issue with UDDI. The DUDE proxy can publish the service
+properties supported by UDDIe in the DHT and support range
+queries using techniques proposed for such queries on DHTs.
+Then we can deliver the scalability benefits of our current solution
+to both UDDI and UDDIe registries. Discovering services meeting
+QoS and price requirements has been studied in the context of a
+grid economy, so that grid schedulers can use various market
+models such as commodity markets and auctions. The Grid
+Market Directory [20] was proposed for this purpose.
+In [12], the authors present an ontology-based matchmaker.
+Resource and request descriptions are expressed in RDF Schema,
+a semantic markup language. Matchmaking rules are expressed in
+TRIPLE, a language based on Horn Logic. Although our current
+implementation focuses on UDDI version 2, in future we will
+consider semantic extensions to UDDI, WS-Discovery [16] and
+other Grid computing standards such as Monitoring and
+Discovery Service (MDS) [10]. So the simplest extension of our
+work could involve using the DHT to do an initial syntax-based
+search to identify the local registries that need to be contacted.
+Then the Proxy Registry can contact these registries, which do
+semantic matchmaking to identify their matches, which are then
+merged at the Proxy Registry and returned to the client.
+The convergence of grid and P2P computing has been explored in
+[5]. GridVine [2] builds a logical semantic overlay on top of a
+physical layer consisting of P-Grid [1], a structured overlay based
+on distributed search tree that uses prefix-based routing and
+changes the overlay paths as part of the network maintenance
+protocol to adapt to load in different parts of the keyspace. A
+federated UDDI service [4] has been built on top of the PlanetP
+[3] publish-subscribe system for unstructured P2P communities.
+The focus of this work has been on the manageability of the
+federated service. The UDDI service is treated as an application
+Article 2
+service to be managed in their framework. So they do not address
+the issue of scalability in UDDI, and instead use simple
+replication. In [21], the authors describe a UDDI extension (UX)
+system that launches a federated query only if locally found
+results are not adequate. While the UX Server is positioned as an
+intermediary similarly to the UDDI Proxy described in our DUDE
+framework, it focuses more on the QoS framework and does not
+attempt to implement a seamless federation mechanism such as
+our DHT based approach. In [22] D2HT describes a discovery
+framework built on top of DHT. However, we have chosen to use
+UDDI on top of DHT. D2HT have used (Agent Management
+System) AMS/ (Directory Facilitator) DF on top of DHT.
+6. CONCLUSIONS AND FUTURE WORK
+In this paper, we have described a distributed architecture to
+support large scale discovery of web-services. Our architecture
+will enable organizations to maintain autonomous control over
+their UDDI registries and at the same time allowing clients to
+query multiple registries simultaneously. The clients are oblivious
+to the transparent proxy approach we have adopted and get richer
+and more complete response to their queries. Based on initial
+prototype testing, we believe that DUDE architecture can support
+effective distribution of UDDI registries thereby making UDDI
+more robust and also addressing its scaling issues. The paper has
+solved the scalability issues with UDDI but does not preclude the
+application of this approach to other service discovery
+mechanisms. An example of another service discovery mechanism
+that could benefit from such an approach is Globus Toolkit"s
+MDS. Furthermore, we plan to investigate other aspects of grid
+service discovery that extend this work. Some of these aspects
+include the ability to subscribe to resource/service information,
+the ability to maintain soft states and the ability to provide a
+variety of views for various different purposes. In addition, we
+plan to revisit the service APIs for a Grid Service Discovery
+solution leveraging the available solutions and specifications as
+well as the work presented in this paper.
+7. REFERENCES
+[1] P-grid: A self-organizing structured p2p system. K.
+Aberer, P. Cudr_e-Mauroux, A. Datta, Z. Despotovic, M.
+Hauswirth, M. Punceva, and R. Schmidt. ACM SIGMOD
+Record, 32(3), 2003.
+[2] GridVine: Building Internet-Scale Semantic Overlay
+Networks Karl Aberer, Philippe Cudre-Mauroux, Manfred
+Hauswirth, and Tim van Pelt. Proceedings, 3rd ISWC 2004,
+Hiroshima, Japan.
+[3] "PlanetP: Using Gossiping to Build Content Addressable
+Peer-to-Peer Information Sharing Communities". F. M.
+Cuenca-Acuna, C. Peery, R. P. Martin, and T. D. Nguyen. In
+Proceedings of 12th Intl Symposium on HPDC, June 2003.
+[4] Self-Managing Federated Services. Francisco Matias
+Cuenca-Acuna and Thu D. Nguyen. In Proceedings of 23rd
+IEEE International SRDS, 2004, Florianpolis, BRAZIL.
+[5] On Death, Taxes, and the Convergence of P2P and Grid
+Computing. Ian Foster and Adriana Iamnitchi. In
+Proceedings of the 2nd IPTPS 2003.
+[6] The Physiology of the Grid: An Open Grid Services
+Architecture for Distributed Systems Integration, I. Foster,
+C. Kesselman, J. M. Nick and S. Tuecke. Presented to OGSI
+WG, Global Grid Forum, June 22, 2002. Available at
+http://www.globus.org/alliance/publications/papers.php
+[7] Was the Universal Service Registry a Dream?, Fred
+Hartman and Harris Reynolds, In the Web Services Journal,
+Dec 2, 2004.
+[8] Pastry: Scalable, distributed object location and routing for
+large scale peer-to-peer systems. A. Rowstron and P.
+Druschel. In Proc. of IFIP/ACM Middleware, Nov. 2001
+[9] http://www.planet-lab.org
+[10] Grid information services for distributed resource sharing.
+K. Czajkowski, S. Fitzgerald, I. Foster, and C. Kesselman.
+Proceedings of the IEEE HPDC-10, 2001.
+[11] Handling churn in a DHT. S. Rhea, D. Geels, T. Roscoe,
+and J. Kubiatowicz. Proceedings of the USENIX Annual
+Technical Conference, June 2004.
+[12] Ontology-based Resource Matching in the Grid - The Grid
+Meets the Semantic Web, Hongsuda Tangmunarunkit,
+Stefan Decker, Carl Kesselman. In Proceedings of the
+Second ISWC (2003), Miami, Florida.
+[13] UDDI4j Java Class Library: 
+http://www124.ibm.com/developerworks/oss/uddi4j/
+[14] UDDI V2 specification: Available at http://uddi.org/
+[15] UDDI V3.0.2 specification: http://uddi.org/
+[16] Web Services Dynamic Discovery (WS-Discovery)
+Specification, February 2004.
+http://msdn.microsoft.com/ws/2004/02/discovery
+[17] Information Services (MDS): Key Concepts.
+http://www.globus.org/toolkit/docs/4.0/info/key/
+[18] G- QoSM: Grid Service Discovery using QoS Properties,
+R J. Al-Ali, O.F. Rana, D.W. Walker, S. Jha and S. Sohail.
+Journal of Computing and Informatics (Special issue on Grid
+Computing), Ed: Domenico LaForenza, Vol. 21, No. 4, pp.
+363-382, 2002.
+[19] UDDIe: An Extended Registry for Web Services, A.
+ShaikhAli, O.F. Rana, R. Al-Ali and D.W. Walker,
+Workshop on Service Oriented Computing: Models,
+Architectures and Applications at SAINT Conference,
+Florida, US, January 2003. IEEE Computer Society Press.
+[20] A Market-Oriented Grid Directory Service for Publication
+and Discovery of Grid Service Providers and their Services,
+J. Yu, S. Venugopal and R. Buyya, Journal of
+Supercomputing, Kluwer Academic Publishers, USA, 2005.
+[21] Chen Zhou, Liang-Tien Chia, Bilhanan Silverajan, Bu-Sung
+Lee: UX - An Architecture Providing QoS-Aware and
+Federated Support for UDDI. ICWS 2003: 171-176.
+[22] Kee-Hyun Choi, Ho-Jin Shin, Dong-Ryeol Shin, Service
+Discovery Supporting Open Scalability Using 
+FIPACompliant Agent Platform for Ubiquitous Networks, Lecture
+Notes in Computer Science, Volume 3482, Jan 2005.
+Article 2
+Self-Adaptive Applications on the Grid
+Gosia Wrzesinska Jason Maassen Henri E. Bal
+Dept. of Computer Systems, Vrije Universiteit Amsterdam
+{gosia, jason, bal}@cs.vu.nl
+Abstract
+Grids are inherently heterogeneous and dynamic. One important
+problem in grid computing is resource selection, that is, finding
+an appropriate resource set for the application. Another problem
+is adaptation to the changing characteristics of the grid 
+environment. Existing solutions to these two problems require that a 
+performance model for an application is known. However, 
+constructing such models is a complex task. In this paper, we investigate
+an approach that does not require performance models. We start an
+application on any set of resources. During the application run, we
+periodically collect the statistics about the application run and 
+deduce application requirements from these statistics. Then, we adjust
+the resource set to better fit the application needs. This approach 
+allows us to avoid performance bottlenecks, such as overloaded WAN
+links or very slow processors, and therefore can yield significant
+performance improvements. We evaluate our approach in a number
+of scenarios typical for the Grid.
+Categories and Subject Descriptors C.2.4 [COMPUTER 
+COMMUNICATION NETWORKS]: Distributed Systems-Distributed
+applications
+; C.4 [PERFORMANCE OF SYSTEMS]: Measurement 
+techniques, Modelling techniques
+General Terms Algorithms, Measurement, Performance, 
+Experimentation
+1. Introduction
+In recent years, grid computing has become a real alternative to 
+traditional parallel computing. A grid provides much computational
+power, and thus offers the possibility to solve very large problems,
+especially if applications can run on multiple sites at the same time
+(7; 15; 20). However, the complexity of Grid environments also
+is many times larger than that of traditional parallel machines like
+clusters and supercomputers. One important problem is resource
+selection - selecting a set of compute nodes such that the 
+application achieves good performance. Even in traditional, 
+homogeneous parallel environments, finding the optimal number of nodes
+is a hard problem and is often solved in a trial-and-error fashion.
+In a grid environment this problem is even more difficult, because
+of the heterogeneity of resources: the compute nodes have various
+speeds and the quality of network connections between them varies
+from low-latency and high-bandwidth local-area networks (LANs)
+to high-latency and possibly low-bandwidth wide-area networks
+(WANs). Another important problem is that the performance and
+availability of grid resources varies over time: the network links or
+compute nodes may become overloaded, or the compute nodes may
+become unavailable because of crashes or because they have been
+claimed by a higher priority application. Also, new, better resources
+may become available. To maintain a reasonable performance level,
+the application therefore needs to adapt to the changing conditions.
+The adaptation problem can be reduced to the resource selection
+problem: the resource selection phase can be repeated during 
+application execution, either at regular intervals, or when a performance
+problem is detected, or when new resources become available. This
+approach has been adopted by a number of systems (5; 14; 18). For
+resource selection, the application runtime is estimated for some
+resource sets and the set that yields the shortest runtime is selected
+for execution. Predicting the application runtime on a given set of
+resources, however, requires knowledge about the application. 
+Typically, an analytical performance model is used, but constructing
+such a model is inherently difficult and requires an expertise which
+application programmers may not have.
+In this paper, we introduce and evaluate an alternative approach
+to application adaptation and resource selection which does not
+need a performance model. We start an application on any set of
+resources. During the application run, we periodically collect 
+information about the communication times and idle times of the 
+processors. We use these statistics to automatically estimate the resource
+requirements of the application. Next, we adjust the resource set the
+application is running on by adding or removing compute nodes
+or even entire clusters. Our adaptation strategy uses the work by
+Eager et al. (10) to determine the efficiency and tries to keep the
+efficiency of the application between a lower and upper threshold
+derived from their theory. Processors are added or deleted to stay
+between the thresholds, thus adapting automatically to the 
+changing environment.
+A major advantage of our approach is that it improves 
+application performance in many different situations that are typical for
+grid computing. It handles all of the following cases:
+• automatically adapting the number of processors to the degree
+of parallelism in the application, even when this degree changes
+dynamically during the computation
+• migrating (part of) a computation away from overloaded 
+resources
+• removing resources with poor communication links that slow
+down the computation
+• adding new resources to replace resources that have crashed
+Our work assumes the application is malleable and can run 
+(efficiently) on multiple sites of a grid (i.e., using co-allocation (15)).
+It should not use static load balancing or be very sensitive to 
+wide121
+area latencies. We have applied our ideas to divide-and-conquer
+applications, which satisfy these requirements. Divide-and-conquer
+has been shown to be an attractive paradigm for programming grid
+applications (4; 20). We believe that our approach can be extended
+to other classes of applications with the given assumptions.
+We implemented our strategy in Satin, which is a Java-centric
+framework for writing grid-enabled divide-and-conquer 
+applications (20). We evaluate the performance of our approach on the
+DAS-2 wide-area system and we will show that our approach yields
+major performance improvements (roughly 10-60 %) in the above
+scenarios.
+The rest of this paper is structured as follows. In Section 2, we
+explain what assumptions we are making about the applications and
+grid resources. In Section 3, we present our resource selection and
+adaptation strategy. In Section 4, we describe its implementation in
+the Satin framework. In Section 5, we evaluate our approach in a
+number of grid scenarios. In Section 6, we compare our approach
+with the related work. Finally, in Section 7, we conclude and 
+describe future work.
+2. Background and assumptions
+In this section, we describe our assumptions about the applications
+and their resources. We assume the following resource model. The
+applications are running on multiple sites at the same time, where
+sites are clusters or supercomputers. We also assume that the 
+processors of the sites are accessible using a grid scheduling system,
+such as Koala (15), Zorilla (9) or GRMS (3). Processors 
+belonging to one site are connected by a fast LAN with a low latency
+and high bandwidth. The different sites are connected by a WAN.
+Communication between sites suffers from high latencies. We 
+assume that the links connecting the sites with the Internet backbone
+might become bottlenecks causing the inter-site communication to
+suffer from low bandwidths.
+We studied the adaptation problem in the context of 
+divide-andconquer applications. However, we believe that our methodology
+can be used for other types of applications as well. In this section
+we summarize the assumptions about applications that are 
+important to our approach.
+The first assumption we make is that the application is 
+malleable, i.e., it is able to handle processors joining and leaving
+the on-going computation. In (23), we showed how 
+divide-andconquer applications can be made fault tolerant and malleable.
+Processors can be added or removed at any point in the 
+computation with little overhead. The second assumption is that the 
+application can efficiently run on processors with different speeds.
+This can be achieved by using a dynamic load balancing 
+strategy, such as work stealing used by divide-and-conquer 
+applications (19). Also, master-worker applications typically use dynamic
+load-balancing strategies (e.g., MW - a framework for writing 
+gridenabled master-worker applications (12)). We find it a reasonable
+assumption for a grid application, since applications for which the
+slowest processor becomes a bottleneck will not be able to 
+efficiently utilize grid resources. Finally, the application should be 
+insensitive to wide-area latencies, so it can run efficiently on a 
+widearea grid (16; 17).
+3. Self-adaptation
+In this section we will explain how we use application 
+malleability to find a suitable set of resources for a given application and to
+adapt to changing conditions in the grid environment. In order to
+monitor the application performance and guide the adaptation, we
+added an extra process to the computation which we call 
+adaptation coordinator. The adaptation coordinator periodically collects
+performance statistics from the application processors. We 
+introduce a new application performance metric: weighted average 
+efficiency which describes the application performance on a 
+heterogeneous set of resources. The coordinator uses statistics from 
+application processors to compute the weighted average efficiency. If
+the efficiency falls above or below certain thresholds, the 
+coordinator decides on adding or removing processors. A heuristic formula
+is used to decide which processors have to be removed. During
+this process the coordinator learns the application requirements by
+remembering the characteristics of the removed processors. These
+requirements are then used to guide the adding of new processors.
+3.1 Weighted average efficiency
+In traditional parallel computing, a standard metric describing the
+performance of a parallel application is efficiency. Efficiency is
+defined as the average utilization of the processors, that is, the
+fraction of time the processors spend doing useful work rather than
+being idle or communicating with other processors (10).
+efficiency =
+1
+n
+∗
+n
+i=0
+(1 − overheadi )
+where n is the number of processors and overheadi is the 
+fraction of time the ith
+processor spends being idle or communicating.
+Efficiency indicates the benefit of using multiple processors.
+Typically, the efficiency drops as new processors are added to
+the computation. Therefore, achieving a high speedup (and thus
+a low execution time) and achieving a high system utilization are
+conflicting goals (10). The optimal number of processors is the
+number for which the ratio of efficiency to execution time is 
+maximized. Adding processors beyond this number yields little benefit.
+This number is typically hard to find, but in (10) it was 
+theoretically proven that if the optimal number of processors is used, the
+efficiency is at least 50%. Therefore, adding processors when 
+efficiency is smaller or equal to 50% will only decrease the system
+utilization without significant performance gains.
+For heterogeneous environments with different processor speeds,
+we extended the notion of efficiency and introduced weighted 
+average efficiency.
+wa efficiency =
+1
+n
+∗
+n
+i=0
+speedi ∗ (1 − overheadi )
+The useful work done by a processor (1 − overheadi) is
+weighted by multiplying it by the speed of this processor 
+relative to the fastest processor. The fastest processor has speed = 1,
+for others holds: 0 < speed ≤ 1. Therefore, slower processors are
+modeled as fast ones that spend a large fraction of the time being
+idle. Weighted average efficiency reflects the fact that adding slow
+processors yields less benefit than adding fast processors.
+In the heterogeneous world, it is hardly beneficial to add 
+processors if the efficiency is lower than 50% unless the added processor
+is faster than some of the currently used processors. Adding faster
+processors might be beneficial regardless of the efficiency.
+3.2 Application monitoring
+Each processor measures the time it spends communicating or 
+being idle. The computation is divided into monitoring periods. 
+After each monitoring period, the processors compute their overhead
+over this period as the percentage of the time they spent being idle
+or communicating in this period. Apart from total overhead, each
+processor also computes the overhead of inter-cluster and 
+intracluster communication.
+To calculate weighted average efficiency, we need to know the
+relative speeds of the processors, which depend on the 
+application and the problem size used. Since it is impractical to run the
+122
+whole application on each processor separately, we use 
+applicationspecific benchmarks. Currently we use the same application with a
+small problem size as a benchmark and we require the application
+programmer to specify this problem size. This approach requires
+extra effort from the programmer to find the right problem size and
+possibly to produce input files for this problem size, which may
+be hard. In the future, we are planning to generate benchmarks 
+automatically by choosing a random subset of the task graph of the
+original application.
+Benchmarks have to be re-run periodically because the speed of
+a processor might change if it becomes overloaded by another 
+application (for time-shared machines). There is a trade-off between
+the accuracy of speed measurements and the overhead it incurs. The
+longer the benchmark, the greater the accuracy of the measurement.
+The more often it is run, the faster changes in processor speed are
+detected. In our current implementation, the application 
+programmer specifies the length of the benchmark (by specifying its 
+problem size) and the maximal overhead it is allowed to cause. 
+Processors run the benchmark at such frequency so as not to exceed the
+specified overhead. In the future, we plan to combine 
+benchmarking with monitoring the load of the processor which would allow
+us to avoid running the benchmark if no change in processor load
+is detected. This optimization will further reduce the benchmarking
+overhead.
+Note that the benchmarking overhead could be avoided 
+completely for more regular applications, for example, for 
+masterworker applications with tasks of equal or similar size. The 
+processor speed could then be measured by counting the tasks 
+processed by this processor within one monitoring period. 
+Unfortunately, divide-and-conquer applications typically exhibit a very 
+irregular structure. The sizes of tasks can vary by many orders of
+magnitude.
+At the end of each monitoring period, the processors send the
+overhead statistics and processor speeds to the coordinator. 
+Periodically, the coordinator computes the weighted average efficiency and
+other statistics, such as average inter-cluster overhead or overheads
+in each cluster. The clocks of the processors are not synchronized
+with each other or with the clock of the coordinator. Each 
+processor decides separately when it is time to send data. Occasionally,
+the coordinator may miss data at the end of a monitoring period,
+so it has to use data from the previous monitoring period for these
+processors. This causes small inaccuracies in the calculations of the
+coordinator, but does not influence the performance of adaptation.
+3.3 Adaptation strategy
+The adaptation coordinator tries to keep the weighted average 
+efficiency between Emin and Emax. When it exceeds Emax, the 
+coordinator requests new processors from the scheduler. The number of
+requested processors depends on the current efficiency: the higher
+the efficiency, the more processors are requested. The coordinator
+starts removing processors when the weighted average efficiency
+drops below Emin. The number of nodes that are removed again
+depends on the weighted average efficiency. The lower the 
+efficiency, the more nodes are removed. The thresholds we use are
+Emax = 50%, because we know that adding processors when 
+efficiency is lower does not make sense, and Emin = 30%. 
+Efficiency of 30% or lower might indicate performance problems such
+as low bandwidth or overloaded processors. In that case, 
+removing bad processors will be beneficial for the application. Such low
+efficiency might also indicate that we simply have too many 
+processors. In that case, removing some processors may not be beneficial
+but it will not harm the application. The coordinator always tries
+to remove the worst processors. The badness of a processor is
+determined by the following formula:
+proc badnessi = α ∗
+1
+speedi
++ β ∗ ic overheadi
++ γ ∗ inW orstCluster(i)
+The processor is considered bad if it has low speed ( 1
+speed
+is
+big) and high inter-cluster overhead (ic overhead). High 
+intercluster overhead indicates that the bandwidth to this processor"s
+cluster is insufficient. Removing processors located in a single
+cluster is desirable since it decreases the amount of wide-area
+communication. Therefore, processors belonging to the worst
+cluster are preferred. Function inW orstCluster(i) returns 1 for
+processors belonging to the worst cluster and 0 otherwise. The
+badness of clusters is computed similarly to the badness of
+processors:
+cluster badnessi = α ∗
+1
+speedi
++ β ∗ ic overheadi
+The speed of a cluster is the sum of processor speeds normalized
+to the speed of the fastest cluster. The ic overhead of a cluster is
+an average of processor inter-cluster overheads. The α, β and γ
+coefficients determine the relative importance of the terms. Those
+coefficients are established empirically. Currently we are using
+the following values: α = 1, β = 100 and γ = 10, based
+on the observation that ic overhead > 0.2 indicates bandwidth
+problems and processors with speed < 0.05 do not contribute to
+the computation.
+Additionally, when one of the clusters has an exceptionally high
+inter-cluster overhead (larger than 0.25), we conclude that the 
+bandwidth on the link between this cluster and the Internet backbone is
+insufficient for the application. In that case, we simply remove the
+whole cluster instead of computing node badness and removing the
+worst nodes. After deciding which nodes are removed, the 
+coordinator sends a message to these nodes and the nodes leave the
+computation. Figure 1 shows a schematic view of the adaptation
+strategy. Dashed lines indicate a part that is not supported yet, as
+will be explained below.
+This simple adaptation strategy allows us to improve application
+performance in several situations typical for the Grid:
+• If an application is started on fewer processors than its degree of
+parallelism allows, it will automatically expand to more 
+processors (as soon as there are extra resources available). Conversely,
+if an application is started on more processors than it can 
+efficiently use, a part of the processors will be released.
+• If an application is running on an appropriate set of resources
+but after a while some of the resources (processors and/or 
+network links) become overloaded and slow down the 
+computation, the overloaded resources will be removed. After removing
+the overloaded resources, the weighted average efficiency will
+increase to above the Emax threshold and the adaptation 
+coordinator will try to add new resources. Therefore, the application
+will be migrated from overloaded resources.
+• If some of the original resources chosen by the user are 
+inappropriate for the application, for example the bandwidth to one
+of the clusters is too small, the inappropriate resources will be
+removed. If necessary, the adaptation component will try to add
+other resources.
+• If during the computation a substantial part of the processors
+will crash, the adaptation component will try to add new 
+resources to replace the crashed processors.
+123
+0
+2000
+4000
+6000
+runtime(secs.)
+Scenario 0
+a b c
+Scenario 1 Scenario 2 Scenario 3 Scenario 4 Scenario 5
+without monitoring and adaptation (runtime 1)
+with monitoring and adaptation (runtime 2)
+with monitoring but no adaptation (runtime 3)
+Figure 2. The runtimes of the Barnes-Hut application, scenarios 0-5
+add nodes
+faster nodes
+available
+if
+compute weighted
+average efficiency E wa
+wait & collect
+statistics
+rank nodes
+remove worst nodes
+waE
+Ewa
+Y
+N
+N
+Y
+above
+if
+below
+if
+Emin
+maxE
+Figure 1. Adaptation strategy
+• If the application degree of parallelism is changing during the
+computation, the number of nodes the application is running on
+will be automatically adjusted.
+Further improvements are possible, but require extra 
+functionality from the grid scheduler and/or integration with monitoring
+services such as NWS (22). For example, adding nodes to a 
+computation can be improved. Currently, we add any nodes the 
+scheduler gives us. However, it would be more efficient to ask for the
+fastest processors among the available ones. This could be done, for
+example, by passing a benchmark to the grid scheduler, so that it
+can measure processor speeds in an application specific way. 
+Typically, it would be enough to measure the speed of one processor
+per site, since clusters and supercomputers are usually 
+homogeneous. An alternative approach would be ranking the processors
+based on parameters such as clock speed and cache size. This 
+approach is sometimes used for resource selection for sequential 
+applications (14). However, it is less accurate than using an 
+application specific benchmark.
+Also, during application execution, we can learn some 
+application requirements and pass them to the scheduler. One example is
+minimal bandwidth required by the application. The lower bound
+on minimal required bandwidth is tightened each time a cluster
+with high inter-cluster overhead is removed. The bandwidth 
+between each pair of clusters is estimated during the computation by
+measuring data transfer times, and the bandwidth to the removed
+cluster is set as a minimum. Alternatively, information from a grid
+monitoring system can be used. Such bounds can be passed to the
+scheduler to avoid adding inappropriate resources. It is especially
+important when migrating from resources that cause performance
+problems: we have to be careful not to add the resources we have
+just removed. Currently we use blacklisting - we simply do not 
+allow adding resources we removed before. This means, however,
+that we cannot use these resources even if the cause of the 
+performance problem disappears, e.g. the bandwidth of a link might
+improve if the background traffic diminishes.
+We are currently not able to perform opportunistic migration
+- migrating to better resources when they are discovered. If an
+application runs with efficiency between Emin and Emax, the
+adaptation component will not undertake any action, even if 
+better resources become available. Enabling opportunistic migration
+requires, again, the ability to specify to the scheduler what 
+better resources are (faster, with a certain minimal bandwidth) and
+receiving notifications when such resources become available.
+Existing grid schedulers such as GRAM from the Globus
+Toolkit (11) do not support such functionality. The developers of
+the KOALA metascheduler (15) have recently started a project
+whose goal is to provide support for adaptive applications. We
+are currently discussing with them the possibility of providing the
+functionalities required by us, aiming to extend our adaptivity 
+strat124
+egy to support opportunistic migration and to improve the initial
+resource selection.
+4. Implementation
+We incorporated our adaptation mechanism into Satin - a Java
+framework for creating grid-enabled divide-and-conquer 
+applications. With Satin, the programmer annotates the sequential code
+with divide-and-conquer primitives and compiles the annotated
+code with a special Satin compiler that generates the necessary
+communication and load balancing code. Satin uses a very 
+efficient, grid-aware load balancing algorithm - Cluster-aware 
+Random Work Stealing (CRS) (19), which hides wide-area latencies
+by overlapping local and remote stealing. Satin also provides 
+transparent fault tolerance and malleability (23). With Satin, removing
+and adding processors from/to an ongoing computation incurs little
+overhead.
+We instrumented the Satin runtime system to collect runtime
+statistics and send them to the adaptation coordinator. The 
+coordinator is implemented as a separate process. Both coordinator and
+Satin are implemented entirely in Java on top of the Ibis 
+communication library (21). The core of Ibis is also implemented in Java.
+The resulting system therefore is highly portable (due to Java"s
+write once, run anywhere property) allowing the software to run
+unmodified on a heterogeneous grid.
+Ibis also provides the Ibis Registry. The Registry provides,
+among others, a membership service to the processors taking part
+in the computation. The adaptation coordinator uses the Registry
+to discover the application processes, and the application processes
+use this service to discover each other. The Registry also offers fault
+detection (additional to the fault detection provided by the 
+communication channels). Finally, the Registry provides the possibility
+to send signals to application processes. The coordinator uses this
+functionality to notify the processors that they need to leave the
+computation. Currently the Registry is implemented as a 
+centralized server.
+For requesting new nodes, the Zorilla (9) system is used - a
+peer-to-peer supercomputing middleware which allows 
+straightforward allocation of processors in multiple clusters and/or 
+supercomputers. Zorilla provides locality-aware scheduling, which tries to
+allocate processors that are located close to each other in terms
+of communication latency. In the future, Zorilla will also support
+bandwidth-aware scheduling, which tries to maximize the total
+bandwidth in the system. Zorilla can be easily replaced with 
+another grid scheduler. In the future, we are planning to integrate
+our adaptation component with GAT (3) which is becoming a 
+standard in the grid community and KOALA (15) a scheduler that 
+provides co-allocation on top of standard grid middleware, such as the
+Globus Toolkit (11).
+5. Performance evaluation
+In this section, we will evaluate our approach. We will demonstrate
+the performance of our mechanism in a few scenarios. The first
+scenario is an ideal situation: the application runs on a 
+reasonable set of nodes (i.e., such that the efficiency is around 50%) and
+no problems such as overloaded networks and processors, 
+crashing processors etc. occur. This scenario allows us to measure the
+overhead of the adaptation support. The remaining scenarios are
+typical for grid environments and demonstrate that with our 
+adaptation support the application can avoid serious performance 
+bottlenecks such as overloaded processors or network links. For each 
+scenario, we compare the performance of an application with 
+adaptation support to a non-adaptive version. In the non-adaptive version,
+the coordinator does not collect statistics and no benchmarking (for
+measuring processor speeds) is performed. In the ideal scenario,
+0 5 10 15
+iteration number
+0
+200
+400
+600
+iterationduration(secs.)
+starting on 8 nodes
+starting on 16 nodes
+starting on 24 nodes
+starting on 8 nodes
+starting on 16 nodes
+starting on 24 nodes
+}no adaptation
+}with adaptation
+Figure 3. Barnes-Hut iteration durations with/without adaptation,
+too few processors
+0 5 10 15
+iteration number
+0
+200
+400
+600
+800
+1000
+iterationduration(secs.)
+no adaptation
+with adaptation
+CPU load introduced
+overloaded nodes removed
+started adding nodes
+36 nodes reached
+Figure 4. Barnes-Hut iteration durations with/without adaptation,
+overloaded CPUs
+we additionally measure the performance of an application with
+collecting statistics and benchmarking turned on but without 
+doing adaptation, that is, without allowing it to change the number
+of nodes. This allows us to measure the overhead of benchmarking
+and collecting statistics. In all experiments we used a monitoring
+period of 3 minutes for the adaptive versions of the applications.
+All the experiments were carried out on the DAS-2 wide-area 
+system (8), which consists of five clusters located at five Dutch 
+uni125
+versities. One of the clusters consists of 72 nodes, the others of 32
+nodes. Each node contains two 1 GHz Pentium processors. Within
+a cluster, the nodes are connected by Fast Ethernet. The clusters
+are connected by the Dutch university Internet backbone. In our
+experiments, we used the Barnes-Hut N-body simulation. 
+BarnesHut simulates the evolution of a large set of bodies under influence
+of (gravitational or electrostatic) forces. The evolution of N bodies
+is simulated in iterations of discrete time steps.
+5.1 Scenario 0: adaptivity overhead
+In this scenario, the application is started on 36 nodes. The nodes
+are equally divided over 3 clusters (12 nodes in each cluster). On
+this number of nodes, the application runs with 50% efficiency, so
+we consider it a reasonable number of nodes. As mentioned above,
+in this scenario we measured three runtimes: the runtime of the 
+application without adaptation support (runtime 1), the runtime with
+adaptation support (runtime 2) and the runtime with monitoring
+(i.e., collection of statistics and benchmarking) turned on but 
+without allowing it to change the number of nodes (runtime 3). Those
+runtimes are shown in Figure 2, first group of bars. The comparison
+between runtime 3 and 1 shows the overhead of adaptation support.
+In this experiment it is around 15%. Almost all overhead comes
+from benchmarking. The benchmark is run 1-2 times per 
+monitoring period. This overhead can be made smaller by increasing the
+length of the monitoring period and decreasing the benchmarking
+frequency. The monitoring period we used (3 minutes) is relatively
+short, because the runtime of the application was also relatively
+short (30-60 minutes). Using longer running applications would
+not allow us to finish the experimentation in a reasonable time.
+However, real-world grid applications typically need hours, days or
+even weeks to complete. For such applications, a much longer 
+monitoring period can be used and the adaptation overhead can be kept
+much lower. For example, with the Barnes-Hut application, if the
+monitoring period is extended to 10 minutes, the overhead drops to
+6%. Note that combining benchmarking with monitoring processor
+load (as described in Section 3.2) would reduce the benchmarking
+overhead to almost zero: since the processor load is not changing,
+the benchmarks would only need to be run at the beginning of the
+computation.
+5.2 Scenario 1: expanding to more nodes
+In this scenario, the application is started on fewer nodes than the
+application can efficiently use. This may happen because the user
+does not know the right number of nodes or because insufficient
+nodes were available at the moment the application was started. We
+tried 3 initial numbers of nodes: 8 (Scenario 1a), 16 (Scenario 1b)
+and 24 (Scenario 1c). The nodes were located in 1 or 2 clusters. In
+each of the three sub-scenarios, the application gradually expanded
+to 36-40 nodes located in 4 clusters. This allowed to reduce the
+application runtimes by 50% (Scenario 1a), 35% (Scenario 1b) and
+12% (Scenario 1c) with respect to the non-adaptive version. Those
+runtimes are shown in Figure 2. Since Barnes-Hut is an iterative
+application, we also measured the time of each iteration, as shown
+in Figure 3. Adaptation reduces the iteration time by a factor of 3
+(Scenario 1a), 1.7 (Scenario 1b) and 1.2 (Scenario 1c) which allows
+us to conclude that the gains in the total runtime would be even
+bigger if the application were run longer than for 15 iterations.
+5.3 Scenario 2: overloaded processors
+In this scenario, we started the application on 36 nodes in 3 clusters.
+After 200 seconds, we introduced a heavy, artificial load on the 
+processors in one of the clusters. Such a situation may happen when
+an application with a higher priority is started on some of the 
+resources. Figure 4 shows the iteration durations of both the adaptive
+and non-adaptive versions. After introducing the load, the iteration
+0 5 10 15
+iteration number
+0
+200
+400
+600
+800
+1000
+iterationduration(secs.)
+no adaptation
+with adaptation
+one cluster is badly connected
+badly connected cluster removed
+started adding nodes
+36 nodes reached
+Figure 5. Barnes-Hut iteration durations with/without adaptation,
+overloaded network link
+0 5 10 15
+iteration number
+0
+200
+400
+600
+800
+1000
+iterationduration(secs.)
+no adaptation
+with adaptation
+one cluster is badly connected
+12 nodes lightly overloaded
+removed badly connected cluster
+removed 2 lightly overloaded nodes
+Figure 6. Barnes-Hut iteration durations with/without adaptation,
+overloaded CPUs and an overloaded network link
+duration increased by a factor of 2 to 3. Also, the iteration times
+became very variable. The adaptive version reacted by removing
+the overloaded nodes. After removing these nodes, the weighted
+average efficiency rose to around 35% which triggered adding new
+nodes and the application expanded back to 38 nodes. So, the 
+overloaded nodes were replaced by better nodes, which brought the 
+iteration duration back to the initial values. This reduced the total
+runtime by 14%. The runtimes are shown in Figure 2.
+126
+5.4 Scenario 3: overloaded network link
+In this scenario, we ran the application on 36 nodes in 3 clusters.
+We simulated that the uplink to one of the clusters was overloaded
+and the bandwidth on this uplink was reduced to approximately
+100 KB/s. To simulate low bandwidth we use the traffic-shaping
+techniques described in (6). The iteration durations in this 
+experiment are shown in Figure 5. The iteration durations of the 
+nonadaptive version exhibit enormous variation: from 170 to 890 
+seconds. The adaptive version removed the badly connected cluster
+after the first monitoring period. As a result, the weighted 
+average efficiency rose to around 35% and new nodes were gradually
+added until their number reached 38. This brought the iteration
+times down to around 100 seconds. The total runtime was reduced
+by 60% (Figure 2).
+5.5 Scenario 4: overloaded processors and an overloaded
+network link
+In this scenario, we ran the application on 36 nodes in 3 clusters.
+Again, we simulated an overloaded uplink to one of the clusters.
+Additionally, we simulated processors with heterogeneous speeds
+by inserting a relatively light artificial load on the processors in one
+of the remaining clusters. The iteration durations are shown in 
+Figure 6. Again, the non-adaptive version exhibits a great variation in
+iteration durations: from 200 to 1150 seconds. The adaptive 
+version removes the badly connected cluster after the first monitoring
+period which brings the iteration duration down to 210 seconds on
+average. After removing one of the clusters, since some of the 
+processors are slower (approximately 5 times), the weighted average
+efficiency raises only to around 40%. Since this value lies between
+Emin and Emax, no nodes are added or removed. This example 
+illustrates what the advantages of opportunistic migration would be.
+There were faster nodes available in the system. If these nodes were
+added to the application (which could trigger removing the slower
+nodes) the iteration duration could be reduced even further. Still,
+the adaptation reduced the total runtime by 30% (Figure 2).
+5.6 Scenario 5: crashing nodes
+In the last scenario, we also run the application on 36 nodes in 3
+clusters. After 500 seconds, 2 out of 3 clusters crash. The iteration
+durations are shown in Figure 7. After the crash, the iteration
+duration raised from 100 to 200 seconds. The weighted efficiency
+rose to around 30% which triggered adding new nodes in the
+adaptive version. The number of nodes gradually went back to 35
+which brought the iteration duration back to around 100 seconds.
+The total runtime was reduced by 13% (Figure 2).
+6. Related work
+A number of Grid projects address the question of resource 
+selection and adaptation. In GrADS (18) and ASSIST (1), resource 
+selection and adaptation requires a performance model that allows
+predicting application runtimes. In the resource selection phase, a
+number of possible resource sets is examined and the set of 
+resources with the shortest predicted runtime is selected. If 
+performance degradation is detected during the computation, the resource
+selection phase is repeated. GrADS uses the ratio of the predicted
+execution times (of certain application phases) to the real 
+execution times as an indicator of application performance. ASSIST uses
+the number of iterations per time unit (for iterative applications)
+or the number of tasks per time unit (for regular master-worker
+applications) as a performance indicator. The main difference 
+between these approaches and our approach is the use of performance
+models. The main advantage is that once the performance model
+is known, the system is able to take more accurate migration 
+decisions than with our approach. However, even if the performance
+0 5 10 15
+iteration number
+0
+200
+400
+600
+800
+1000
+iterationduration(secs.)
+no adaptation
+with adaptation
+2 out of 3 clusters crash
+started adding nodes
+36 nodes reached
+Figure 7. Barnes-Hut iteration durations with/without adaptation,
+crashing CPUs
+model is known, the problem of finding an optimal resource set (i.e.
+the resource set with the minimal execution time) is NP-complete.
+Currently, both GrADS and ASSIST examine only a subset of all
+possible resource sets and therefore there is no guarantee that the
+resulting resource set will be optimal. As the number of available
+grid resources increases, the accuracy of this approach diminishes,
+as the subset of possible resource sets that can be examined in a
+reasonable time becomes smaller. Another disadvantage of these
+systems is that the performance degradation detection is suitable
+only for iterative or regular applications.
+Cactus (2) and GridWay (14) do not use performance models.
+However, these frameworks are only suitable for sequential 
+(GridWay) or single-site applications (Cactus). In that case, the resource
+selection problem boils down to selecting the fastest machine or
+cluster. Processor clock speed, average load and a number of 
+processors in a cluster (Cactus) are used to rank resources and the 
+resource with the highest rank is selected. The application is migrated
+if performance degradation is detected or better resources are 
+discovered. Both Cactus and GridWay use the number of iterations per
+time unit as the performance indicator. The main limitation of this
+methodology is that it is suitable only for sequential or single-site
+applications. Moreover, resource selection based on clock speed is
+not always accurate. Finally, performance degradation detection is
+suitable only for iterative applications and cannot be used for 
+irregular computations such as search and optimization problems.
+The resource selection problem was also studied by the AppLeS
+project (5). In the context of this project, a number of applications
+were studied and performance models for these applications were
+created. Based on such a model a scheduling agent is built that
+uses the performance model to select the best resource set and the
+best application schedule on this set. AppLeS scheduling agents are
+written on a case-by-case basis and cannot be reused for another 
+application. Two reusable templates were also developed for specific
+classes of applications, namely master-worker (AMWAT template)
+and parameter sweep (APST template) applications. Migration is
+not supported by the AppLeS software.
+127
+In (13), the problem of scheduling master-worker applications
+is studied. The authors assume homogeneous processors (i.e., with
+the same speed) and do not take communication costs into account.
+Therefore, the problem is reduced to finding the right number of
+workers. The approach here is similar to ours in that no 
+performance model is used. Instead, the system tries to deduce the 
+application requirements at runtime and adjusts the number of workers
+to approach the ideal number.
+7. Conclusions and future work
+In this paper, we investigated the problem of resource selection and
+adaptation in grid environments. Existing approaches to these 
+problems typically assume the existence of a performance model that
+allows predicting application runtimes on various sets of resources.
+However, creating performance models is inherently difficult and
+requires knowledge about the application. We propose an approach
+that does not require in-depth knowledge about the application. We
+start the application on an arbitrary set of resources and monitor
+its performance. The performance monitoring allows us to learn
+certain application requirements such as the number of processors
+needed by the application or the application"s bandwidth 
+requirements. We use this knowledge to gradually refine the resource set
+by removing inadequate nodes or adding new nodes if necessary.
+This approach does not result in the optimal resource set, but in a
+reasonable resource set, i.e. a set free from various performance
+bottlenecks such as slow network connections or overloaded 
+processors. Our approach also allows the application to adapt to the
+changing grid conditions.
+The adaptation decisions are based on the weighted average 
+efficiency - an extension of the concept of parallel efficiency defined
+for traditional, homogeneous parallel machines. If the weighted 
+average efficiency drops below a certain level, the adaptation 
+coordinator starts removing worst nodes. The badness of the nodes is
+defined by a heuristic formula. If the weighted average efficiency
+raises above a certain level, new nodes are added. Our simple 
+adaptation strategy allows us to handle multiple scenarios typical for
+grid environments: expand to more nodes or shrink to fewer nodes
+if the application was started on an inappropriate number of 
+processors, remove inadequate nodes and replace them with better ones,
+replace crashed processors, etc. The application adapts fully 
+automatically to changing conditions. We implemented our approach
+in the Satin divide-and-conquer framework and evaluated it on
+the DAS-2 distributed supercomputer and demonstrate that our 
+approach can yield significant performance improvements (up to 60%
+in our experiments).
+Future work will involve extending our adaptation strategy
+to support opportunistic migration. This, however, requires grid
+schedulers with more sophisticated functionality than currently 
+exists. Further research is also needed to decrease the benchmarking
+overhead. For example, the information about CPU load could
+be used to decrease the benchmarking frequency. Another line of
+research that we wish to investigate is using feedback control to
+refine the adaptation strategy during the application run. For 
+example, the node badness formula could be refined at runtime based
+on the effectiveness of the previous adaptation decisions. Finally,
+the centralized implementation of the adaptation coordinator might
+become a bottleneck for applications which are running on very
+large numbers of nodes (hundreds or thousands). This problem can
+be solved by implementing a hierarchy of coordinators: one 
+subcoordinator per cluster which collects and processes statistics from
+its cluster and one main coordinator which collects the information
+from the sub-coordinators.
+Acknowledgments
+This work was carried out in the context of Virtual Laboratory for
+e-Science project (ww.vl-e.nl). This project is supported by a BSIK
+grant from the Dutch Ministry of Education, Culture and Science
+(OC&W) and is part of the ICT innovation program of the Ministry
+of Economic Affairs (EZ).
+References
+[1] M. Aldinucci, F. Andre, J. Buisson, S. Campa, M. Coppola,
+M. Danelutto, and C. Zoccolo. Parallel program/component
+adaptivity management. In ParCo 2005, Sept. 2005.
+[2] G. Allen, D. Angulo, I. Foster, G. Lanfermann, C. Liu,
+T. Radke, E. Seidel, and J. Shalf. The cactus worm: 
+Experiments with resource discovery and allocation in a grid 
+environment. Int"l Journal of High Performance Computing 
+Applications, 15(4):345-358, 2001.
+[3] G. Allen, K. Davis, K. N. Dolkas, N. D. Doulamis, T. Goodale,
+T. Kielmann, A. Merzky, J. Nabrzyski, J. Pukacki, T. Radke,
+M. Russell, E. Seidel, J. Shalf, and I. Taylor. Enabling 
+applications on the grid - a gridlab overview. Int"l Journal of
+High-Performance Computing Applications, 17(4):449-466,
+Aug. 2003.
+[4] J. E. Baldeschwieler, R. D. Blumofe, and E. A. Brewer. 
+ATLAS: An Infrastructure for Global Computing. In 7th ACM
+SIGOPS European Workshop on System Support for 
+Worldwide Applications, pages 165-172, Sept. 1996.
+[5] F. Berman, R. Wolski, H. Casanova, W. Cirne, H. Dail,
+M. Faerman, S. Figueira, J. Hayes, G. Obertelli, J. Schopf,
+G. Shao, S. Smallen, N. Spring, A. Su, and D. 
+Zagorodnov. Adaptive Computing on the Grid Using AppLeS. IEEE
+Trans. on Parallel and Distributed Systems, 14(4):369-382,
+Apr. 2003.
+[6] D.-M. Chiu, M. Kadansky, J. Provino, and J. Wesley. 
+Experiences in programming a traffic shaper. In 5th IEEE Symp. on
+Computers and Communications, pages 470-476, 2000.
+[7] W. Chrabakh and R. Wolski. GridSAT: A Chaff-based 
+Distributed SAT Solver for the Grid. In 2003 ACM/IEEE 
+conference on Supercomputing, page 37, 2003.
+[8] The Distributed ASCI Supercomputer (DAS).
+http://www.cs.vu.nl/das2/.
+[9] N. Drost, R. V. van Nieuwport, and H. E. Bal. Simple 
+localityaware co-allocation in peer-to-peer supercomputing. In 6th
+Int"l Workshop on Global Peer-2-Peer Computing, May 2005.
+[10] D. L. Eager, J. Zahorjan, and E. D. Lazowska. Speedup
+versus efficiency in parallel systems. IEEE Transactions on
+Computers, 38(3):408-423, Mar. 1989.
+[11] I. Foster. Globus toolkit version 4: Software for 
+serviceoriented systems. In IFIP International Conference on 
+Network and Parallel Computing, pages 2-13. Springer-Verlag
+LNCS 3779, 2005.
+[12] J.-P. Goux, S. Kulkarni, M. Yoder, and J. Linderoth. An
+Enabling Framework for Master-Worker Applications on the
+Computational Grid. In 9th IEEE Int"l Symp. on High 
+Performance Distributed Computing, pages 43-50, Aug. 2000.
+[13] E. Heymann, M. A. Senar, E. Luque, and M. Livny. 
+Adaptive scheduling for master-worker applications on the 
+computational grid. In 1st IEEE/ACM International Workshop
+on Grid Computing, pages 214-227. Springer Verlag LNCS
+1971, 2000.
+128
+[14] E. Huedo, R. S. Montero, and I. M. Llorente. A framework
+for adaptive execution in grids. Software - Practice & 
+Experience, 34(7):631-651, 2004.
+[15] H. H. Mohamed and D. H. Epema. Experiences with the
+KOALA Co-Allocating Scheduler in Multiclusters. In 5th
+IEEE/ACM Int"l Symp. on Cluster Computing and the GRID,
+pages 640-650, May 2005.
+[16] A. Plaat, H. E. Bal, and R. F. H. Hofman. Sensitivity of
+parallel applications to large differences in bandwidth and
+latency in two-layer interconnects. In 5th Int"l Symp. On
+High Performance Computer Architecture, pages 244-253,
+Jan. 1999.
+[17] J. W. Romein, H. E. Bal, J. Schaeffer, and A. Plaat. A 
+performance analysis of transposition-table-driven work scheduling
+in distributed search. IEEE Trans. on Parallel and Distributed
+Systems, 13(5):447-459, May 2002.
+[18] S. S. Vadhiyar and J. J. Dongarra. Self adaptivity in Grid
+computing. Concurrency and Computation: Practice and
+Experience, 17(2-4):235-257, 2005.
+[19] R. V. van Nieuwpoort, T. Kielmann, and H. E. Bal. Efficient
+load balancing for wide-area divide-and-conquer applications.
+In 8th ACM SIGPLAN Symp. on Principles and Practices of
+Parallel Programming, pages 34-43, 2001.
+[20] R. V. van Nieuwpoort, J. Maassen, T. Kielmann, and H. E. Bal.
+Satin: Simple and Efficient Java-based Grid Programming.
+Scalable Computing: Practice and Experience, 6(3):19-32,
+Sept. 2004.
+[21] R. V. van Nieuwpoort, J. Maassen, G. Wrzesinska, R. 
+Hofman, C. Jacobs, T. Kielmann, and H. E. Bal. Ibis: a 
+Flexible and Efficient Java-based Grid Programming Environment.
+Concurrency & Computation: Practice & Experience, 
+17(78):1079-1107, 2005.
+[22] R. Wolski, N. Spring, and J. Hayes. The network weather 
+service: A distributed resource performance forecasting service
+for metacomputing. Journal of Future Generation Computing
+Systems, 15(5-6):757-768, Oct. 1999.
+[23] G. Wrzesinska, R. V. van Nieuwport, J. Maassen, and H. E.
+Bal. Fault-tolerance, Malleability and Migration for 
+Divideand-Conquer Applications on the Grid. In Int"l Parallel and
+Distributed Processing Symposium, Apr. 2005.
+129
