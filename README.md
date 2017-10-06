@@ -6,3 +6,5 @@ My compling homeworks will be here
 <i>compling_jup_task_2</i> - задание на поиск ключевых слов
 
 <i>Topic_Modeling_Task</i> - задание по тематическому моделированию
+
+<i>Irony_Detection_SemEval_Task</i> - задание по определению иронии в твиттах
