@@ -1,12 +1,16 @@
 # compling_homeworks
 My compling homeworks will be here
 
-<i>compling_jup_task_1</i> - задание на коллокации
+<ol>
+<li><i>compling_jup_task_1</i> - задание на коллокации</li>
 
-<i>compling_jup_task_2</i> - задание на поиск ключевых слов
+<li><i>compling_jup_task_2</i> - задание на поиск ключевых слов</li>
 
-<i>Topic_Modeling_Task</i> - задание по тематическому моделированию
+<li><i>Topic_Modeling_Task</i> - задание по тематическому моделированию</li>
 
-<i>Irony_Detection_SemEval_Task</i> - задание по определению иронии в твиттах
+<li><i>Irony_Detection_SemEval_Task</i> - задание по определению иронии в твиттах</li>
 
-<i>natasha_textblob</i> - задание по нахождению именованных сущностей в текстах на русском языке (данные - factRuEval.txt)
+<li><i>natasha_textblob</i> - задание по нахождению именованных сущностей в текстах на русском языке (данные - factRuEval.txt)</li>
+
+<li><i>Finnish_PropBank_Task</i> - задание по Финскому Пропбанку</li>
+</ol>
