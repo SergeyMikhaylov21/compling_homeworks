@@ -13,4 +13,6 @@ My compling homeworks will be here
 <li><i>natasha_textblob</i> - задание по нахождению именованных сущностей в текстах на русском языке (данные - factRuEval.txt)</li>
 
 <li><i>Finnish_PropBank_Task</i> - задание по Финскому Пропбанку</li>
+
+<li><i>Text_Generation_Task</i> - задание по генерации текста. Простейшая графовая вопросно-ответная система</li>
 </ol>
