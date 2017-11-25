@@ -16,7 +16,8 @@ My compling homeworks will be here
 
 <li><i>Text_Generation_Task</i> - задание по генерации текста. Простейшая графовая вопросно-ответная система</li>
 
-<li><i>Задание по разрешению анафоры</i> - работал с xrenner над текстом под названием <i>rus_sent.conllu</i>. В итоге части предложения выделяются, но цветная подсветка самой анафоры не работает даже на простых правилах. Обсудил это с Франом и оставил для рассмотрения [issue](https://github.com/amir-zeldes/xrenner/issues/63) у создателя xrenner</li>
-</ol>
+<li><i>Задание по разрешению анафоры</i> - работал с xrenner над текстом под названием <i>rus_sent.conllu</i>. В итоге части предложения выделяются, но цветная подсветка самой анафоры не работает даже на простых правилах. Обсудил это с Франом и оставил для рассмотрения issue (https://github.com/amir-zeldes/xrenner/issues/63) у создателя xrenner.
 
 ![alt text](https://github.com/SergeyMikhaylov21/compling_homeworks/blob/master/xrenner_screen.png)
+</li>
+</ol>
