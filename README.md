@@ -20,4 +20,5 @@ My compling homeworks will be here
 
 ![alt text](https://github.com/SergeyMikhaylov21/compling_homeworks/blob/master/xrenner_screen.png)
 </li>
+<li><i><b>ХАКАТОН</b></i> - загружены две тетрадки, с использованием wordnet и без wordnet (команда <b>Варвары Гуц</b>, <b>Сергея Михайлова</b> и <b>Дарьи Шершневой</b>). В общую гугл-папку были отправлены результаты варианта без wordnet. Также необходимо сказать о том, что введение случайных величин вместо пустых строк на одну сотую ухудшило результат :( </li>
 </ol>
